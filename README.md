@@ -14,7 +14,7 @@ has-arrows: true(default) / false
 
 ```html
 <h-carousel width="400px" height="200px" mode="shallow" has-dots="false" has-arrows="true">
-  <!-- image url array -->
+  <!-- An image url array -->
   [
     "./img/some-image.png", 
   ]
