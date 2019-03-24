@@ -4,7 +4,7 @@
 
 - [ ] 可制定高宽，有无轮播图跳转的 dots 和 arrows
 
-# usage
+## usage
 
 mode: shallow(default) / scroll / stage
 
