@@ -11,6 +11,7 @@ class Carousel extends HTMLElement {
     this.imgLength = this.images.length
     this.innerText = ''
     this.setAttribute('index', '0')
+    this.timer = null
 
     this.shadow = this.attachShadow({ mode: 'open' })
     this.wrapper = document.createElement('div')
@@ -34,13 +35,15 @@ class Carousel extends HTMLElement {
     if (this.hasDots) {
       const dotUl = document.createElement('ul')
       dotUl.classList.add('dotUl')
-      const dots = Array(this.images.length).fill(document.createElement('span'))
-      dots.forEach((dot, i) => {
+      for (let i = 0; i < this.images.length; i++) {
+        const dot = document.createElement('span')
         dot.classList.add('dot')
-        // eslint-disable-next-line no-param-reassign
         dot.dataset.index = i
-        dotUl.appendChild(dot.cloneNode(true))
-      })
+        if (i === 0) {
+          dot.classList.add('active')
+        }
+        dotUl.appendChild(dot)
+      }
       this.wrapper.appendChild(dotUl)
     }
 
@@ -52,6 +55,7 @@ class Carousel extends HTMLElement {
         border: none;
       }
       .wrapper {
+        overflow: hidden;
         position: relative;
         width: ${this.width};
         height: ${this.height};
@@ -81,7 +85,7 @@ class Carousel extends HTMLElement {
       .dot:hover {
         background: #778899;
       }
-      .dot:nth-child(${this.getAttribute('index') + 1}) {
+      .active {
         background: #778899;
       }`
   }
@@ -131,14 +135,60 @@ class Carousel extends HTMLElement {
           font-size: 100%;
           background: rgba(119, 136, 153, 0.5);
         }`
-        this.shadow.appendChild(this.css)
         this.wrapper.appendChild(div)
+        this.shadow.appendChild(this.css)
         this.shadow.appendChild(this.wrapper)
       }
     } else if (mode === 'scroll') {
-      // load =
+      load = () => {
+        this.images.forEach((img, i) => {
+          const div = document.createElement('div')
+          div.classList.add('img')
+          div.style.backgroundImage = `url(${this.images[i]})`
+          if (i === this.images.length - 1) div.classList.add('left')
+          else if (i === 0) div.classList.add('now')
+          this.wrapper.appendChild(div)
+        })
+        this.css.textContent += `
+          .img {
+            width: ${this.width};
+            height: ${this.height};
+            position: absolute;
+            top: 0;
+            transform: translate(100%);
+            background-position: center;
+            background-size: cover;
+            transition: transform .5s ease-in;
+          }
+          .left {
+            transform: translate(-100%);
+          }
+          .now {
+            transform: translate(0);
+          }
+          .btn {
+            position: absolute;
+            top: 50%;
+            transform: translate(0, -50%);
+            width: 8%;
+            height: 25%;
+            font-size: 0;
+            background: transparent;
+            z-index: 1;
+            outline: none;
+            cursor: pointer;
+          }
+          .btn:hover {
+            font-size: 100%;
+            background: rgba(119, 136, 153, 0.5);
+          }`
+        this.shadow.appendChild(this.css)
+        this.shadow.appendChild(this.wrapper)
+      }
     } else if (mode === 'stage') {
-      // load =
+      load = () => {
+
+      }
     } else {
       load = () => {
         throw new Error('Mode selection error: Can only select shallow, scroll, stage or default mode')
@@ -147,14 +197,23 @@ class Carousel extends HTMLElement {
     return load()
   }
 
-  getTheEleByClass(eleClass) {
-    let ele
-    this.wrapper.childNodes.forEach((node) => {
-      if (node.classList.contains(eleClass)) {
-        ele = node
+  getClass(eleClass) {
+    const getTheEleByClass = function (eleClass, root) {
+      const nodes = root.children
+      const len = root.children.length
+      let ele
+      for (let i = 0; i < len; i++) {
+        if (nodes[i].classList.contains(eleClass)) {
+          ele = nodes[i]
+          break
+        }
+        if (nodes[i].children.length > 0) {
+          ele = getTheEleByClass(eleClass, nodes[i])
+        }
       }
-    })
-    return ele
+      return ele
+    }
+    return getTheEleByClass(eleClass, this.wrapper)
   }
 
   updataImage(mode) {
@@ -162,24 +221,44 @@ class Carousel extends HTMLElement {
     if (mode === 'shallow') {
       updataImage = () => {
         // 读取 index 值，更新图片
-        const imgWrapper = this.getTheEleByClass('img-wrapper')
-        imgWrapper.style.backgroundImage = `url(${this.images[this.getAttribute('index')]})`
+        const imgWrapper = this.getClass('img-wrapper')
+        imgWrapper.style.opacity = 0
+        setTimeout(() => {
+          imgWrapper.style.backgroundImage = `url(${this.images[this.getAttribute('index')]})`
+          imgWrapper.style.opacity = 1
+        }, 500)
         // 更改 dot
+        this.getClass('active').classList.remove('active')
+        Array.from(this.getClass('dotUl').children)[this.getAttribute('index')].classList.add('active')
       }
     } else if (mode === 'scroll') {
-      // updataImage =
+      updataImage = () => {
+        this.getClass('now').classList.remove('now')
+        this.getClass('left').classList.remove('left')
+        const imgs = Array.from(this.getClass('img'))
+        const len = imgs.length
+        for (let i = 0; i < len; i++) {
+          if (i === this.getAttribute('index')) {
+            // imgs[i].classList.add('now')
+            // const j = i === 0 ? len - 1 : i - i
+            // imgs[j].classList.add('left')
+          }
+        }
+        // 更改 dot
+        this.getClass('active').classList.remove('active')
+        Array.from(this.getClass('dotUl').children)[this.getAttribute('index')].classList.add('active')
+      }
     } else if (mode === 'stage') {
-      // updataImage =
-    } else {
-      // updataImage = () => {
-      //   throw new Error('Mode selection error: Can only select shallow, scroll, stage or default mode')
-      // }
+      updataImage = () => {
+
+      }
     }
     return updataImage()
   }
 
-  clickDot() {
+  clickDot(event) {
     // 更改 index 属性的 值
+    this.setAttribute('index', event.path[0].dataset.index)
   }
 
   prevOne() {
@@ -202,9 +281,22 @@ class Carousel extends HTMLElement {
     this.setAttribute('index', index)
   }
 
+  setTimer() {
+    this.timer = setInterval(() => {
+      this.nextOne()
+    }, this.time)
+  }
+
+  clearTimer() {
+    clearInterval(this.timer)
+  }
+
   bindEvent() {
-    this.getTheEleByClass('next').addEventListener('click', this.nextOne.bind(this))
-    this.getTheEleByClass('prev').addEventListener('click', this.prevOne.bind(this))
+    this.wrapper.addEventListener('mouseenter', this.clearTimer.bind(this))
+    this.wrapper.addEventListener('mouseleave', this.setTimer.bind(this))
+    this.getClass('dotUl').addEventListener('click', this.clickDot.bind(this))
+    this.getClass('next').addEventListener('click', this.nextOne.bind(this))
+    this.getClass('prev').addEventListener('click', this.prevOne.bind(this))
   }
 }
 
