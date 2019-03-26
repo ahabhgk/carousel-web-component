@@ -17,6 +17,10 @@ class Carousel extends HTMLElement {
     this.wrapper = document.createElement('div')
     this.wrapper.classList.add('wrapper')
 
+    this.imgWrapper = document.createElement('div')
+    this.imgWrapper.classList.add('img-wrapper')
+    this.wrapper.appendChild(this.imgWrapper)
+
     if (this.hasArrows) {
       const prevBtn = document.createElement('button')
       prevBtn.type = 'button'
@@ -59,6 +63,12 @@ class Carousel extends HTMLElement {
         position: relative;
         width: ${this.width};
         height: ${this.height};
+      }
+      .img-wrapper {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        height: 100%;
       }
       .prev {
         left: 0;
@@ -105,14 +115,8 @@ class Carousel extends HTMLElement {
     let load
     if (mode === 'shallow') {
       load = () => {
-        const div = document.createElement('div')
-        div.classList.add('img-wrapper')
         this.css.textContent += `
         .img-wrapper {
-          position: absolute;
-          top: 0;
-          width: 100%;
-          height: 100%;
           background-image: url(${this.images[this.getAttribute('index')]});
           background-position: center;
           background-size: cover;
@@ -135,7 +139,6 @@ class Carousel extends HTMLElement {
           font-size: 100%;
           background: rgba(119, 136, 153, 0.5);
         }`
-        this.wrapper.appendChild(div)
         this.shadow.appendChild(this.css)
         this.shadow.appendChild(this.wrapper)
       }
@@ -144,10 +147,10 @@ class Carousel extends HTMLElement {
         this.images.forEach((img, i) => {
           const div = document.createElement('div')
           div.classList.add('img')
-          div.style.backgroundImage = `url(${this.images[i]})`
+          div.style.backgroundImage = `url(${img})`
           if (i === this.images.length - 1) div.classList.add('left')
           else if (i === 0) div.classList.add('now')
-          this.wrapper.appendChild(div)
+          this.imgWrapper.appendChild(div)
         })
         this.css.textContent += `
           .img {
@@ -221,11 +224,10 @@ class Carousel extends HTMLElement {
     if (mode === 'shallow') {
       updataImage = () => {
         // 读取 index 值，更新图片
-        const imgWrapper = this.getClass('img-wrapper')
-        imgWrapper.style.opacity = 0
+        this.imgWrapper.style.opacity = 0
         setTimeout(() => {
-          imgWrapper.style.backgroundImage = `url(${this.images[this.getAttribute('index')]})`
-          imgWrapper.style.opacity = 1
+          this.imgWrapper.style.backgroundImage = `url(${this.images[this.getAttribute('index')]})`
+          this.imgWrapper.style.opacity = 1
         }, 500)
         // 更改 dot
         this.getClass('active').classList.remove('active')
@@ -233,15 +235,16 @@ class Carousel extends HTMLElement {
       }
     } else if (mode === 'scroll') {
       updataImage = () => {
+        console.log(this.getClass('now'))
         this.getClass('now').classList.remove('now')
         this.getClass('left').classList.remove('left')
-        const imgs = Array.from(this.getClass('img'))
+        const imgs = Array.from(this.imgWrapper.children)
         const len = imgs.length
         for (let i = 0; i < len; i++) {
           if (i === this.getAttribute('index')) {
-            // imgs[i].classList.add('now')
-            // const j = i === 0 ? len - 1 : i - i
-            // imgs[j].classList.add('left')
+            imgs[i].classList.add('now')
+            const j = i === 0 ? len - 1 : i - i
+            imgs[j].classList.add('left')
           }
         }
         // 更改 dot
