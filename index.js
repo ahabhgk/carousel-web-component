@@ -6,7 +6,7 @@ class Carousel extends HTMLElement {
     this.mode = this.getAttribute('mode') || 'shallow'
     this.hasDots = this.getAttribute('has-dots') === 'true' || true
     this.hasArrows = this.getAttribute('has-arrows') === 'true' || true
-    this.time = this.getAttribute('time') || 3000
+    this.time = Number(this.getAttribute('time')) || 3000
     this.images = JSON.parse(this.innerText)
     this.imgLength = this.images.length
     this.innerText = ''
@@ -65,10 +65,10 @@ class Carousel extends HTMLElement {
         height: ${this.height};
       }
       .img-wrapper {
-        position: absolute;
-        top: 0;
         width: 100%;
         height: 100%;
+        position: absolute;
+        top: 0;
       }
       .prev {
         left: 0;
@@ -143,7 +143,7 @@ class Carousel extends HTMLElement {
         this.shadow.appendChild(this.css)
         this.shadow.appendChild(this.wrapper)
       }
-    } else if (mode === 'scroll') {
+    } else if (mode === 'scroll' || mode === 'stage') {
       load = () => {
         this.images.forEach((img, i) => {
           const div = document.createElement('div')
@@ -151,50 +151,81 @@ class Carousel extends HTMLElement {
           div.style.backgroundImage = `url(${img})`
           if (i === this.images.length - 1) div.classList.add('left')
           else if (i === 0) div.classList.add('now')
+          else if (i === 1) div.classList.add('right')
           this.imgWrapper.appendChild(div)
         })
         this.css.textContent += `
           .img {
-            width: ${this.width};
-            height: ${this.height};
             position: absolute;
-            top: 0;
-            transform: translate(100%);
             background-position: center;
             background-size: cover;
-            transition: transform .5s ease-in;
+            z-index: -2;
+          }
+          .right {
             z-index: -1;
-          }
-          .left {
-            transform: translate(-100%);
-            z-index: 1;
-          }
-          .now {
-            transform: translate(0);
-            z-index: 0;
           }
           .btn {
             position: absolute;
             top: 50%;
             transform: translate(0, -50%);
             width: 8%;
-            height: 25%;
             font-size: 0;
             background: transparent;
             z-index: 1;
             outline: none;
             cursor: pointer;
-          }
-          .btn:hover {
-            font-size: 100%;
-            background: rgba(119, 136, 153, 0.5);
           }`
+        if (mode === 'scroll') {
+          this.css.textContent += `
+            .img {
+              width: 100%;
+              height: 100%;
+              top: 0;
+              transform: translate(100%);
+              transition: transform .3s ease-in;
+            }
+            .left {
+              transform: translate(-100%);
+              z-index: 1;
+            }
+            .now {
+              transform: translate(0);
+              z-index: 0;
+            }
+            .btn {
+              height: 25%;
+            }
+            .btn:hover {
+              font-size: 100%;
+              background: rgba(119, 136, 153, 0.5);
+            }`
+        } else if (mode === 'stage') {
+          this.css.textContent += `
+            .img {
+              width: 80%;
+              height: 80%;
+              bottom: 4%;
+              transform: translate(25%);
+              transition: all .3s ease-in;
+              border-radius: 8px;
+              box-shadow: 20px 0 20px -20px #000, -20px 0 20px -20px #000;
+            }
+            .left {
+              transform: translate(0);
+              z-index: -1;
+            }
+            .now {
+              height: 100%;
+              bottom: 0;
+              transform: translate(12.5%);
+              z-index: 0;
+            }
+            .btn {
+              height: 100%;
+            }`
+        }
         this.shadow.appendChild(this.css)
         this.shadow.appendChild(this.wrapper)
-      }
-    } else if (mode === 'stage') {
-      load = () => {
-
       }
     } else {
       load = () => {
@@ -237,10 +268,11 @@ class Carousel extends HTMLElement {
         this.getClass('active').classList.remove('active')
         Array.from(this.getClass('dotUl').children)[this.getAttribute('index')].classList.add('active')
       }
-    } else if (mode === 'scroll') {
+    } else if (mode === 'scroll' || mode === 'stage') {
       updataImage = () => {
         const now = this.getClass('now')
         const left = this.getClass('left')
+        const right = this.getClass('right')
         let index
         const nodeArr = Array.from(now.parentNode.children)
         nodeArr.forEach((node, i) => {
@@ -250,38 +282,53 @@ class Carousel extends HTMLElement {
           }
         })
         const num = Number(this.getAttribute('index'))
-        if (index < num || (num === 0 && index === this.images.length - 1)) {
-          left.classList.remove('left')
+        left.classList.remove('left')
+        right.classList.remove('right')
+
+        const goRight = function () {
           now.classList.add('left')
           let next
+          let nextRight
           nodeArr.forEach((node, i) => {
-            if (node === now) next = nodeArr[i === nodeArr.length - 1 ? 0 : i + 1]
-          })
-          next.classList.add('now')
-        } else {
-          left.classList.remove('left')
-          left.classList.add('now')
-          let prev
-          nodeArr.forEach((node, i) => {
-            if (node === left) {
-              if (i === 1) prev = nodeArr[nodeArr.length - 1]
-              else if (i === 0) prev = nodeArr[nodeArr.length - 2]
-              else prev = nodeArr[i - 2]
+            if (node === now) {
+              next = right
+              if (i === nodeArr.length - 2) nextRight = nodeArr[0]
+              else if (i === nodeArr.length - 1) nextRight = nodeArr[1]
+              else nextRight = nodeArr[i + 2]
             }
           })
+          nextRight.classList.add('right')
+          next.classList.add('now')
+        }
+
+        const goLeft = function () {
+          left.classList.add('now')
+          let prev
+          let nextRight
+          nodeArr.forEach((node, i) => {
+            if (node === left) {
+              prev = nodeArr[i === 0 ? nodeArr.length - 1 : i - 1]
+              nextRight = now
+            }
+          })
+          nextRight.classList.add('right')
           prev.classList.add('left')
           prev.style.zIndex = -2
           setTimeout(() => {
             prev.style.zIndex = ''
-          }, 500)
+          }, 300)
+        }
+
+        if (index < num) {
+          if (index === 0 && num === nodeArr.length - 1) goLeft()
+          else goRight()
+        } else if (index > num) {
+          if (index === nodeArr.length - 1 && num === 0) goRight()
+          else goLeft()
         }
         // 更改 dot
         this.getClass('active').classList.remove('active')
         Array.from(this.getClass('dotUl').children)[this.getAttribute('index')].classList.add('active')
-      }
-    } else if (mode === 'stage') {
-      updataImage = () => {
-
       }
     }
     return updataImage()
@@ -289,7 +336,7 @@ class Carousel extends HTMLElement {
 
   clickDot(event) {
     // 更改 index 属性的 值
-    this.setAttribute('index', event.path[0].dataset.index)
+    if (event.path[0].classList.contains('dot')) this.setAttribute('index', event.path[0].dataset.index)
   }
 
   prevOne() {
