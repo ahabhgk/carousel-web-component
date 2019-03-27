@@ -105,6 +105,7 @@ class Carousel extends HTMLElement {
   connectedCallback() {
     this.load(this.mode)
     this.bindEvent()
+    this.setTimer()
   }
 
   attributeChangedCallback() {
@@ -162,12 +163,15 @@ class Carousel extends HTMLElement {
             background-position: center;
             background-size: cover;
             transition: transform .5s ease-in;
+            z-index: -1;
           }
           .left {
             transform: translate(-100%);
+            z-index: 1;
           }
           .now {
             transform: translate(0);
+            z-index: 0;
           }
           .btn {
             position: absolute;
@@ -211,7 +215,7 @@ class Carousel extends HTMLElement {
           break
         }
         if (nodes[i].children.length > 0) {
-          ele = getTheEleByClass(eleClass, nodes[i])
+          ele = getTheEleByClass(eleClass, nodes[i]) || ele
         }
       }
       return ele
@@ -235,17 +239,41 @@ class Carousel extends HTMLElement {
       }
     } else if (mode === 'scroll') {
       updataImage = () => {
-        console.log(this.getClass('now'))
-        this.getClass('now').classList.remove('now')
-        this.getClass('left').classList.remove('left')
-        const imgs = Array.from(this.imgWrapper.children)
-        const len = imgs.length
-        for (let i = 0; i < len; i++) {
-          if (i === this.getAttribute('index')) {
-            imgs[i].classList.add('now')
-            const j = i === 0 ? len - 1 : i - i
-            imgs[j].classList.add('left')
+        const now = this.getClass('now')
+        const left = this.getClass('left')
+        let index
+        const nodeArr = Array.from(now.parentNode.children)
+        nodeArr.forEach((node, i) => {
+          if (node === now) {
+            index = i
+            now.classList.remove('now')
           }
+        })
+        const num = Number(this.getAttribute('index'))
+        if (index < num || (num === 0 && index === this.images.length - 1)) {
+          left.classList.remove('left')
+          now.classList.add('left')
+          let next
+          nodeArr.forEach((node, i) => {
+            if (node === now) next = nodeArr[i === nodeArr.length - 1 ? 0 : i + 1]
+          })
+          next.classList.add('now')
+        } else {
+          left.classList.remove('left')
+          left.classList.add('now')
+          let prev
+          nodeArr.forEach((node, i) => {
+            if (node === left) {
+              if (i === 1) prev = nodeArr[nodeArr.length - 1]
+              else if (i === 0) prev = nodeArr[nodeArr.length - 2]
+              else prev = nodeArr[i - 2]
+            }
+          })
+          prev.classList.add('left')
+          prev.style.zIndex = -2
+          setTimeout(() => {
+            prev.style.zIndex = ''
+          }, 500)
         }
         // 更改 dot
         this.getClass('active').classList.remove('active')
