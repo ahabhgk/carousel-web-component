@@ -186,7 +186,7 @@ class Carousel extends HTMLElement {
             }
             .left {
               transform: translate(-100%);
-              z-index: 1;
+              z-index: -1;
             }
             .now {
               transform: translate(0);
@@ -273,57 +273,43 @@ class Carousel extends HTMLElement {
         const now = this.getClass('now')
         const left = this.getClass('left')
         const right = this.getClass('right')
-        let index
+        let cur
+        const num = Number(this.getAttribute('index'))
+        now.classList.remove('now')
+        left.classList.remove('left')
+        right.classList.remove('right')
         const nodeArr = Array.from(now.parentNode.children)
         nodeArr.forEach((node, i) => {
           if (node === now) {
-            index = i
-            now.classList.remove('now')
+            cur = i
           }
         })
-        const num = Number(this.getAttribute('index'))
-        left.classList.remove('left')
-        right.classList.remove('right')
+
+        nodeArr[num].classList.add('now')
+        if (num === 0) {
+          nodeArr[nodeArr.length - 1].classList.add('left')
+          nodeArr[1].classList.add('right')
+        } else if (num === nodeArr.length - 1) {
+          nodeArr[nodeArr.length - 2].classList.add('left')
+          nodeArr[0].classList.add('right')
+        } else {
+          nodeArr[num - 1].classList.add('left')
+          nodeArr[num + 1].classList.add('right')
+        }
 
         const goRight = function () {
-          now.classList.add('left')
-          let next
-          let nextRight
-          nodeArr.forEach((node, i) => {
-            if (node === now) {
-              next = right
-              if (i === nodeArr.length - 2) nextRight = nodeArr[0]
-              else if (i === nodeArr.length - 1) nextRight = nodeArr[1]
-              else nextRight = nodeArr[i + 2]
-            }
-          })
-          nextRight.classList.add('right')
-          next.classList.add('now')
+          
         }
 
         const goLeft = function () {
-          left.classList.add('now')
-          let prev
-          let nextRight
-          nodeArr.forEach((node, i) => {
-            if (node === left) {
-              prev = nodeArr[i === 0 ? nodeArr.length - 1 : i - 1]
-              nextRight = now
-            }
-          })
-          nextRight.classList.add('right')
-          prev.classList.add('left')
-          prev.style.zIndex = -2
-          setTimeout(() => {
-            prev.style.zIndex = ''
-          }, 300)
+          
         }
 
-        if (index < num) {
-          if (index === 0 && num === nodeArr.length - 1) goLeft()
+        if (cur < num) {
+          if (cur === 0 && num === nodeArr.length - 1) goLeft()
           else goRight()
-        } else if (index > num) {
-          if (index === nodeArr.length - 1 && num === 0) goRight()
+        } else if (cur > num) {
+          if (cur === nodeArr.length - 1 && num === 0) goRight()
           else goLeft()
         }
         // 更改 dot
