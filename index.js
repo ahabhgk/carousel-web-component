@@ -160,9 +160,8 @@ class Carousel extends HTMLElement {
             background-position: center;
             background-size: cover;
             z-index: -2;
-          }
-          .right {
-            z-index: -1;
+            transform: translate(0);
+            transition: all .3s ease-in;
           }
           .btn {
             position: absolute;
@@ -181,15 +180,16 @@ class Carousel extends HTMLElement {
               width: 100%;
               height: 100%;
               top: 0;
+            }
+            .right {
               transform: translate(100%);
-              transition: transform .3s ease-in;
+              z-index: -1;
             }
             .left {
               transform: translate(-100%);
               z-index: -1;
             }
             .now {
-              transform: translate(0);
               z-index: 0;
             }
             .btn {
@@ -205,10 +205,12 @@ class Carousel extends HTMLElement {
               width: 80%;
               height: 80%;
               bottom: 4%;
-              transform: translate(25%);
-              transition: all .3s ease-in;
               border-radius: 8px;
               box-shadow: 20px 0 20px -20px #000, -20px 0 20px -20px #000;
+            }
+            .right {
+              transform: translate(25%);
+              z-index: -1;
             }
             .left {
               transform: translate(0);
@@ -273,17 +275,11 @@ class Carousel extends HTMLElement {
         const now = this.getClass('now')
         const left = this.getClass('left')
         const right = this.getClass('right')
-        let cur
         const num = Number(this.getAttribute('index'))
         now.classList.remove('now')
         left.classList.remove('left')
         right.classList.remove('right')
         const nodeArr = Array.from(now.parentNode.children)
-        nodeArr.forEach((node, i) => {
-          if (node === now) {
-            cur = i
-          }
-        })
 
         nodeArr[num].classList.add('now')
         if (num === 0) {
@@ -295,22 +291,6 @@ class Carousel extends HTMLElement {
         } else {
           nodeArr[num - 1].classList.add('left')
           nodeArr[num + 1].classList.add('right')
-        }
-
-        const goRight = function () {
-          
-        }
-
-        const goLeft = function () {
-          
-        }
-
-        if (cur < num) {
-          if (cur === 0 && num === nodeArr.length - 1) goLeft()
-          else goRight()
-        } else if (cur > num) {
-          if (cur === nodeArr.length - 1 && num === 0) goRight()
-          else goLeft()
         }
         // 更改 dot
         this.getClass('active').classList.remove('active')
